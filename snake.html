@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Snake</title>
+    <style>
+        #container {
+            background-color: teal;
+            padding: 20px;
+            width: 550px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #content {
+            position: relative;
+            width: 550px;
+            height: 500px;
+        }
+        #game {
+            outline: 1px solid lightblue;
+            width: 500px;
+            background-color: white;
+            background-size: 100% 100%;
+            height: 500px;
+            float: left;
+        }
+        #game div {
+            width: 25px;
+            height: 25px;
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+        }
+        #game > div {
+            display: inline-block;
+        }
+        #bar {
+            height: 500px;
+            width: 40px;
+            background-color: #00FF00;
+            display: inline-block;
+            float: left;
+            margin-left: 5px;
+            position: relative;
+            outline: 1px solid lightblue;
+        }
+        #bar > div {
+            background-color: white;
+            position: absolute;
+            width: 100%;
+        }
+        .effect {
+            width: 500px;   
+            height: 500px;
+            position: absolute;
+        }
+        .gameover {
+            background-image: url('gameover.png');
+            position: absolute;
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            width: 500px;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        .win {
+            background-image: url('lsdsnake.png');
+            position: absolute;
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            width: 500px;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="content">
+            <div id="game"></div>
+            <div id="bar"><div id="bar-cover" style="height:500px";></div></div>
+        </div>
+    </div>
+
+<script type="text/javascript">
+
+    var snake = {
+        game: document.getElementById('game'),
+        map: [],
+        map_size: 20,
+        direction: 'right',
+        stack: [],
+        food: [],
+        
+        fill_map: function() {
+            for( var x=0; x < this.map_size; x++ ) {
+                this.map[x] = document.createElement('div');
+                this.game.appendChild(this.map[x]);
+
+                for( var y=0; y < this.map_size; y++ ) {
+                    this.map[x][y] = document.createElement('div');
+                    this.map[x][y].estado = '0';
+                    this.map[x].appendChild(this.map[x][y]);
+                }
+            }
+        },
+
+        init: function() {
+            
+
+            this.fill_map();
+
+            this.add_toStack(3, 9);
+            this.add_toStack(4, 9);
+            this.add_toStack(5, 9);
+            this.generate_food();
+
+            this._addEvent(document, "keydown", function(event) {
+                var key = event.keyCode || event.which;
+                switch (key) {
+                    case 40:
+                        this.set_direction('down');
+                    break;
+                    case 38:
+                        this.set_direction('up');
+                    break;
+                    case 37:
+                        this.set_direction('left');
+                    break;
+                    case 39:
+                        this.set_direction('right');
+                    break;
+                    case 80:
+                        this.pause();
+                    break;
+                    case 82:
+                        this.play();
+                    break;
+                }
+            });
+        },
+
+        play: function() {
+            this.interval = setInterval( (function(that){ return function(){ return that.loop(); }; })(this), 100);
+        },
+
+        loop: function() {
+            this.move();
+        },
+
+        set_direction: function(direction) {
+            if (  (this.direction == 'up' && direction == 'down') 
+               || (this.direction == 'down' && direction == 'up')
+               || (this.direction == 'right' && direction == 'left')
+               || (this.direction == 'left' && direction == 'right') )
+            { return }
+            else
+            { this.direction = direction; }
+        },
+
+        add_toStack: function(x, y) {
+            this.stack.push([x, y]);
+        },
+
+        generate_food: function() {
+            var rand1 = Math.floor((Math.random() * this.map_size));
+            var rand2 = Math.floor((Math.random() * this.map_size));
+            
+            for( var i=0; i < this.stack.length; i++ ) {
+                if ( this.stack[i][0] == rand1 && this.stack[i][1] == rand2 ) {
+                    // recursive until it generates a random food which doesn't collide with stack
+                    return this.generate_food();
+                }
+            }
+            // resets food
+            this.food = [];
+            this.map[rand1][rand2].style.backgroundImage = 'url("smiley.png")';
+            this.food.push(rand1);
+            this.food.push(rand2);
+        },
+
+        pause: function() {
+            clearInterval(this.interval);
+        },
+
+        random_color: function(length) {
+            var rand = Math.floor((Math.random() * 101));
+
+            var rand1 = Math.floor((Math.random() * 256));
+            var rand2 = Math.floor((Math.random() * 256));
+            var rand3 = Math.floor((Math.random() * 256));
+
+            if (rand < this.stack.length) {
+                var color = 'rgb('+rand1+' ,'+rand2+' ,'+rand3+')';    
+            }
+            else {
+                var color = 'green';
+            }
+            
+            return color;
+        },
+
+        border_collition: function(first) {
+            var border_collide = false;
+
+            switch (this.direction) {
+                case 'right':
+                    if (first[0] == this.map_size - 1) { border_collide = true }
+                break;
+                case 'left':
+                    if (first[0] == 0) { border_collide = true }
+                break;
+                case 'up':
+                    if (first[1] == 0) { border_collide = true }
+                break;
+                case 'down':
+                    if (first[1] == this.map_size -1) { border_collide = true }
+                break;
+            }
+
+            return border_collide;
+        },
+
+        draw_snake_shape: function() {
+            for (var i=0; i < this.stack.length; i++) {
+                var square = this.map[this.stack[i][0]][this.stack[i][1]];
+                var own    = this.stack[i];
+                var prev   = this.stack[i-1];
+                var next   = this.stack[i+1];
+                
+                square.style.borderRadius = '0px';
+
+                if (i == this.stack.length - 1) {
+                    this.draw_snake_head(square);
+                }
+                if (this.check_siblings(own, prev, next) != false) {
+                    this.draw_snake_turns(square, this.check_siblings(own, prev, next));
+                }
+                if (i == 0) {
+                    this.draw_snake_tail(square, own, next);
+                }
+            }
+            
+        },
+
+        check_siblings: function(own, previous, next) {
+            
+            if(previous == undefined || next == undefined) {
+                return false;
+            }
+            
+            if (own[0] > previous[0] && own[1] < next[1]) {
+                // direction: up left
+                return 1;
+            }
+            else if (own[1] < previous[1] && own[0] > next[0]) {
+                // direction: right bottom
+                return 1;
+            }
+            else if (own[1] < previous[1] && own[0] < next[0]) {
+                // direction: left bottom
+                return 2;
+            }
+            else if (own[0] < previous[0] && own[1] < next[1]) {
+                // direction: up right
+                return 2;
+            }
+            else if (own[0] > previous[0] && own[1] > next[1]) {
+                // direction: bottom left
+                return 3;
+            }
+            else if (own[1] > previous[1] && own[0] > next[0]) {
+                // direction: right up
+                return 3;
+            }
+            else if (own[1] > previous[1] && own[0] < next[0]) {
+                // direction: left up
+                return 4;
+            }
+            else if (own[0] < previous[0] && own[1] > next[1]) {
+                // direction: bottom right
+                return 4;
+            }
+            else {
+                return false;
+            }
+        },
+
+        draw_snake_turns: function(square, issue) {
+            switch (issue) {
+                case 1:
+                    square.style.borderTopRightRadius = '15px';
+                break;
+                case 2:
+                    square.style.borderTopLeftRadius = '15px';
+                break;
+                case 3:
+                    square.style.borderBottomRightRadius = '15px';
+                break;
+                case 4:
+                    square.style.borderBottomLeftRadius = '15px';
+                break;
+            }
+        },
+
+        draw_snake_head: function(square) {
+            switch (this.direction) {
+                case 'right':
+                    square.style.borderTopRightRadius = '10px';
+                    square.style.borderBottomRightRadius = '10px';
+                break;
+                case 'left':
+                    square.style.borderTopLeftRadius = '10px';
+                    square.style.borderBottomLeftRadius = '10px';
+                break;
+                case 'up':
+                    square.style.borderTopRightRadius = '10px';
+                    square.style.borderTopLeftRadius = '10px';
+                break;
+                case 'down':
+                    square.style.borderBottomRightRadius = '10px';
+                    square.style.borderBottomLeftRadius = '10px';
+                break;
+            }
+        },
+
+        draw_snake_tail: function(square, own, next) {
+            
+            if (own[0] > next[0]) {
+                square.style.borderTopRightRadius = '10px';
+                square.style.borderBottomRightRadius = '10px';
+            }
+            else if (own[0] < next[0]) {
+                square.style.borderTopLeftRadius = '10px';
+                square.style.borderBottomLeftRadius = '10px';
+            }
+            else if (own[1] > next[1]) {
+                square.style.borderBottomRightRadius = '10px';
+                square.style.borderBottomLeftRadius = '10px';
+            }
+            else if (own[1] < next[1]) {
+                square.style.borderTopRightRadius = '10px';
+                square.style.borderTopLeftRadius = '10px';
+            }  
+            
+        },
+
+        move: function() {
+            // first position in stack (snake head)
+            var first = this.stack[this.stack.length-1];
+
+            // chek if snake collides with itself
+            if (this.collide(first) == true) {
+                this.game_over();
+                return;
+            }
+
+            // check if snake collides with borders
+            if (this.border_collition(first) == true) {
+                this.game_over();
+                return;
+            }
+
+            switch (this.direction) {
+                case 'right':
+                    this.add_toStack(first[0]+1, first[1]);
+                break;
+                case 'left':
+                    this.add_toStack(first[0]-1, first[1]);
+                break;
+                case 'up':
+                    this.add_toStack(first[0], first[1]-1);
+                break;
+                case 'down':
+                    this.add_toStack(first[0], first[1]+1);
+                break;
+            }
+
+            // last position in stack (snake tail)
+            var last = this.stack[0];
+            var last_square = this.map[last[0]][last[1]];
+
+            for( var i=0; i < this.stack.length; i++ ) {
+                var square = this.map[this.stack[i][0]][this.stack[i][1]];
+                square.style.backgroundColor = this.random_color();
+                square.style.backgroundImage = 'none';
+            }
+            
+                
+            
+            if (this.eat_food() == false) {
+                last_square.removeAttribute('style');
+                // removes last item from stack. (tail)
+                this.stack.splice(0, 1);
+            }
+            else {
+                this.generate_food();
+            }
+
+            this.draw_snake_shape();
+
+            if (this.stack.length == 100) {
+                this.win();
+                return;
+            }
+        },
+
+        collide: function(first) {
+            for( var i=0; i < this.stack.length -1; i++ ) {
+                if (first[0] == this.stack[i][0] && first[1] == this.stack[i][1]) {
+                    return true;
+                }
+            }
+        },
+
+        game_over: function() {
+            clearInterval(this.interval);
+            var div = document.createElement('div');
+            div.className = 'gameover';
+            document.getElementById('content').appendChild(div);
+        },
+
+        win: function() {
+            clearInterval(this.interval);
+            var div = document.createElement('div');
+            div.className = 'win';
+            document.getElementById('content').appendChild(div);
+        },
+
+        update_bar: function() {
+            var bar = document.getElementById('bar-cover');
+            if (this.stack.length <= 100) {
+                bar.style.height = (500 - this.stack.length * 5 )+'px';
+            }
+        },
+
+        eat_food: function() {
+            var first = this.stack[this.stack.length-1];
+
+
+            if (this.food[0] == first[0] && this.food[1] == first[1]) {
+                // Set allucinations
+                this.set_effects();    
+                
+
+                this.update_bar();
+                return true;
+            } else {
+                return false;
+            }
+        },
+
+        set_background_img: function(option) {
+            switch (option) {
+                case 2: this.game.style.backgroundImage = 'url("lsd1.gif")';
+                break;
+                case 3: this.game.style.backgroundImage = 'url("lsd2.gif")';
+                break;
+                case 4: this.game.style.backgroundImage = 'url("lsd3.gif")';
+                break;
+                case 5: this.game.style.backgroundImage = 'url("lsd4.gif")';
+                break;
+                case 6: this.game.style.backgroundImage = 'url("lsd5.gif")';
+                break;
+                case 7: this.game.style.backgroundImage = 'url("lsd6.gif")';
+                break;
+                case 8: this.game.style.backgroundImage = 'url("lsd7.gif")';
+                break;
+                case 9: this.game.style.backgroundImage = 'url("lsd8.gif")';
+                break;
+            }  
+        },
+
+        set_effects: function() {
+            // color effects
+            if(this.stack.length == 10) {
+                this.start_color_effect();
+            }
+
+            // animated gifs
+            for (var i = 2; i <= 9; i++) {
+                if(this.stack.length == i * 10) {
+                    this.set_background_img(i);
+                }    
+            }
+        },
+
+        start_color_effect: function() {
+            var content = document.getElementById('content'),
+                div = document.createElement('div');
+
+            content.appendChild(div);
+            div.className = "effect";
+
+            this.increase_effect(div);
+        },
+
+        increase_effect: function(div) {
+
+            var r = Math.floor((Math.random() * 256)),
+                g = Math.floor((Math.random() * 256)),
+                b = Math.floor((Math.random() * 256)),
+                a = 0;
+            
+            window.increase = setInterval(function(){ 
+                if (a > 0.3) {
+                    clearInterval(increase);
+                    snake.decrease_effect(div, r, g, b, a);
+                    return;
+                }
+                div.style.backgroundColor = "rgba("+ r +", "+ g +","+ b +","+ a +")";
+                a += 0.01;
+            }, 50);
+        },
+
+        decrease_effect: function(div, r, g, b, a) {
+            window.decrease = setInterval(function(){ 
+                if (a < 0.01) {
+                    clearInterval(decrease);
+                    snake.increase_effect(div, r, g, b, a);
+                    return;
+                }
+                div.style.backgroundColor = "rgba("+ r +", "+ g +", "+ b +","+ a +")";
+                a -= 0.01;
+            }, 50);
+        },
+
+
+
+        clear_effect: function() {
+            clearInterval(increase);
+            clearInterval(decrease);
+        },
+
+        _addEvent: function(obj, type, fn) {
+            var that = this; // hack
+            if (obj.addEventListener) {
+                obj.addEventListener(type, function(e) {
+                    fn.call(that, e);
+                }, false);
+            } else {
+                obj.attachEvent("on" + type, function() {
+                    fn.call(that, window.event);
+                });
+            }
+        }
+    }
+
+    snake.init();
+    snake.play();
+</script>
+</body>
+</html>
