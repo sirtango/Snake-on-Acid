@@ -556,8 +556,80 @@
         }
     }
 
+    function dist(l, r) {
+            var h = l[0] > r[0] ? l[0] - r[0] : r[0] - l[0];
+            var v = l[1] > r[1] ? l[1] - r[1] : r[1] - l[1];
+            return h + v;
+    }
+
+    function min_nexts(stack, food) {
+        var head = stack.slice(-1)[0];
+        var adys = [
+            [head[0] - 1, head[1]], // left
+            [head[0] + 1, head[1]], // right
+            [head[0], head[1] - 1], // up
+            [head[0], head[1] + 1] // down
+        ];
+
+        var distance;
+        var min_dist = 41;
+        var min_dists = [];
+        var min_nexts = [];
+
+        for (var i=0; i<adys.length; i++) {
+            var ignore = false;
+
+            if (adys[i][0] < 0
+                || adys[i][0] >= snake.map_size
+                || adys[i][1] < 0
+                || adys[i][1] >= snake.map_size)
+            {
+                continue;
+            }
+
+            for (var j=0; j<stack.length; j++) {
+                if (adys[i][0] == stack[j][0] && adys[i][1] == stack[j][1]) {
+                    ignore = true;
+                    break;
+                }
+            }
+
+            if (!ignore) {
+                distance = dist(food, adys[i]);
+                min_dists[i] = distance;
+
+                if (distance < min_dist) {
+                    min_dist = distance;
+                }
+            }
+        }
+
+        for (var i=0; i<adys.length; i++) {
+            if (min_dists[i] === min_dist) {
+                min_nexts.push([i, adys[i]]);
+            }
+        }
+
+        return min_nexts;
+    }
+
     snake.init();
-    snake.play();
+    snake.playBot(function(stack, food) {
+        var nexts = min_nexts(stack, food);
+        if (!nexts.length) {
+            return;
+        }
+
+        var next = nexts[0]; // pick one
+        var dir = next[0];
+
+        switch (dir) {
+            case 0: return 'left';
+            case 1: return 'right';
+            case 2: return 'up';
+            case 3: return 'down';
+        }
+    });
 </script>
 </body>
 </html>
