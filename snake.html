@@ -140,6 +140,16 @@
             });
         },
 
+        playBot: function(bot) {
+            this.interval = setInterval(function() {
+                var bot_direction = bot(this.stack, this.food);
+                if (bot_direction) {
+                    this.set_direction(bot_direction);
+                }
+                this.move();
+            }.bind(this), 20);
+        },
+
         play: function() {
             this.interval = setInterval( (function(that){ return function(){ return that.loop(); }; })(this), 100);
         },
